@@ -1,435 +1,348 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Group, Mesh } from "three";
-import { DoubleSide, MathUtils, Vector3 } from "three";
-import { damp, pageScroll } from "@/lib/page-scroll";
+import { useRef } from "react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import {
+  BookOpen,
+  HeartHandshake,
+  MoonStar,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { site } from "@/lib/site";
 
-function clamp(v: number, a = 0, b = 1) {
-  return Math.min(b, Math.max(a, v));
-}
+type RevealCard = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  icon: typeof Sparkles;
+  /** [appear, peak-in, peak-out, disappear] along scrollYProgress */
+  range: [number, number, number, number];
+  placement: string;
+};
 
-function range(p: number, start: number, end: number) {
-  return clamp((p - start) / (end - start));
-}
-
-function smoothstep(t: number) {
-  const x = clamp(t);
-  return x * x * (3 - 2 * x);
-}
-
-const stone = {
-  color: "#e6dcc8",
-  roughness: 0.78,
-  metalness: 0.04,
-} as const;
-
-const gold = {
-  color: "#c9a44a",
-  roughness: 0.3,
-  metalness: 0.72,
-  emissive: "#3a2808",
-  emissiveIntensity: 0.2,
-} as const;
-
-/** Camera chapters — approach → courtyard → arch → hall → dome → exit */
-const shots = [
-  { p: 0, pos: [9.5, 3.4, 14], look: [0, 1.8, 0] },
-  { p: 0.12, pos: [3.2, 2.0, 8.5], look: [0, 1.5, 0.5] },
-  { p: 0.24, pos: [0.2, 1.65, 5.2], look: [0, 1.55, 1.2] },
-  { p: 0.38, pos: [0, 1.55, 2.55], look: [0, 1.6, 0] },
-  { p: 0.52, pos: [0, 1.5, 0.35], look: [0, 2.8, -0.8] },
-  { p: 0.66, pos: [-1.6, 1.55, -0.6], look: [1.2, 2.0, -0.4] },
-  { p: 0.8, pos: [0.4, 2.6, -0.2], look: [0, 3.8, 0] },
-  { p: 1, pos: [7.5, 5.2, 9], look: [0, 2.2, 0] },
+const cards: RevealCard[] = [
+  {
+    id: "welcome",
+    eyebrow: "Masjid",
+    title: "Warm before you arrive",
+    body: "A house of worship that opens first with light — then with people.",
+    icon: MoonStar,
+    range: [0.02, 0.12, 0.22, 0.32],
+    placement:
+      "left-[3%] top-[10%] md:left-[5%] md:top-[14%] w-[min(17rem,72vw)]",
+  },
+  {
+    id: "jumah",
+    eyebrow: "Jumu'ah",
+    title: site.jumah.time,
+    body: "English khutbah. Visitors welcome every Friday.",
+    icon: Users,
+    range: [0.24, 0.34, 0.46, 0.56],
+    placement:
+      "right-[3%] top-[8%] md:right-[5%] md:top-[12%] w-[min(16rem,72vw)]",
+  },
+  {
+    id: "pantry",
+    eyebrow: "Service",
+    title: "Halimah's Pantry",
+    body: "Food, clothing, and care for East Greensboro — from a little, much.",
+    icon: HeartHandshake,
+    range: [0.48, 0.58, 0.7, 0.8],
+    placement:
+      "left-[4%] bottom-[8%] md:left-[6%] md:bottom-[10%] w-[min(17rem,72vw)]",
+  },
+  {
+    id: "journal",
+    eyebrow: "Journal",
+    title: "Community writing",
+    body: "Notes from the office, the garden, and the Friday table.",
+    icon: BookOpen,
+    range: [0.68, 0.78, 0.88, 0.96],
+    placement:
+      "right-[3%] bottom-[6%] md:right-[5%] md:bottom-[10%] w-[min(16rem,72vw)]",
+  },
 ];
 
-function samplePath(progress: number) {
-  const t = clamp(progress);
-  let i = 0;
-  while (i < shots.length - 1 && shots[i + 1].p < t) i += 1;
-  const a = shots[i];
-  const b = shots[Math.min(i + 1, shots.length - 1)];
-  const e = smoothstep((t - a.p) / (b.p - a.p || 1));
-  return {
-    pos: a.pos.map((v, idx) => v + (b.pos[idx]! - v) * e) as [number, number, number],
-    look: a.look.map((v, idx) => v + (b.look[idx]! - v) * e) as [number, number, number],
-  };
+function useCardMotion(
+  progress: MotionValue<number>,
+  range: [number, number, number, number],
+  reduce: boolean | null,
+) {
+  const [a, b, c, d] = range;
+  const opacity = useTransform(progress, [a, b, c, d], reduce ? [1, 1, 1, 1] : [0, 1, 1, 0]);
+  const y = useTransform(progress, [a, b, c, d], reduce ? [0, 0, 0, 0] : [56, 0, 0, -48]);
+  const scale = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [1, 1, 1, 1] : [0.92, 1, 1, 0.96],
+  );
+  return { opacity, y, scale };
 }
 
-function ScrollDamp() {
-  useFrame((_, delta) => {
-    pageScroll.p = damp(pageScroll.p, pageScroll.target, 5.5, delta);
-  });
-  return null;
-}
-
-function ArchWay({
-  position,
-  width = 1.3,
-  height = 2.2,
-  depth = 0.55,
+function FloatingCard({
+  card,
+  progress,
+  reduce,
 }: {
-  position: [number, number, number];
-  width?: number;
-  height?: number;
-  depth?: number;
+  card: RevealCard;
+  progress: MotionValue<number>;
+  reduce: boolean | null;
 }) {
-  const pillarW = 0.32;
-  const opening = width - pillarW * 2;
-  return (
-    <group position={position}>
-      <mesh position={[-(opening / 2 + pillarW / 2), height / 2, 0]} castShadow>
-        <boxGeometry args={[pillarW, height, depth]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[opening / 2 + pillarW / 2, height / 2, 0]} castShadow>
-        <boxGeometry args={[pillarW, height, depth]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, height - 0.05, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[opening / 2 + 0.08, opening / 2 + 0.08, depth, 28, 1, false, 0, Math.PI]} />
-        <meshStandardMaterial {...stone} side={DoubleSide} />
-      </mesh>
-    </group>
-  );
-}
-
-function Minaret({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 2.2, 0]} castShadow>
-        <cylinderGeometry args={[0.42, 0.52, 4.4, 24]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, 4.45, 0]} castShadow>
-        <cylinderGeometry args={[0.62, 0.62, 0.16, 24]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const a = (i / 6) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(a) * 0.52, 4.45, Math.sin(a) * 0.52]} castShadow>
-            <boxGeometry args={[0.08, 0.42, 0.08]} />
-            <meshStandardMaterial {...gold} />
-          </mesh>
-        );
-      })}
-      <mesh position={[0, 5.1, 0]} castShadow>
-        <cylinderGeometry args={[0.34, 0.4, 0.9, 18]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, 5.8, 0]} castShadow>
-        <coneGeometry args={[0.48, 0.85, 18]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-      <mesh position={[0.12, 6.35, 0]} rotation={[0, 0, -0.4]} castShadow>
-        <torusGeometry args={[0.14, 0.025, 10, 28, Math.PI * 1.45]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-    </group>
-  );
-}
-
-function Dome({
-  position,
-  radius,
-}: {
-  position: [number, number, number];
-  radius: number;
-}) {
-  return (
-    <group position={position}>
-      <mesh castShadow>
-        <cylinderGeometry args={[radius * 0.94, radius, 0.45, 48]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, 0.2, 0]} castShadow>
-        <sphereGeometry args={[radius, 56, 36, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#d2c3a0" roughness={0.38} metalness={0.22} />
-      </mesh>
-      <mesh position={[0.14, radius + 0.35, 0]} rotation={[0, 0, -0.35]} castShadow>
-        <torusGeometry args={[0.16, 0.028, 10, 28, Math.PI * 1.45]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-    </group>
-  );
-}
-
-function MasjidWorld() {
-  const doorGlow = useRef<Mesh>(null);
-
-  useFrame((_, delta) => {
-    const glow = range(pageScroll.p, 0.2, 0.55);
-    if (doorGlow.current) {
-      const mat = doorGlow.current.material as { emissiveIntensity?: number };
-      if (mat.emissiveIntensity != null) {
-        mat.emissiveIntensity = damp(mat.emissiveIntensity, 0.2 + glow * 1.4, 4, delta);
-      }
-    }
-  });
+  const { opacity, y, scale } = useCardMotion(progress, card.range, reduce);
+  const Icon = card.icon;
 
   return (
-    <group>
-      {/* Ground / plaza */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 2]} receiveShadow>
-        <circleGeometry args={[28, 64]} />
-        <meshStandardMaterial color="#1a241c" roughness={0.95} />
-      </mesh>
-      <mesh position={[0, 0.06, 0.5]} receiveShadow>
-        <boxGeometry args={[14, 0.12, 12]} />
-        <meshStandardMaterial color="#cfc3ab" roughness={0.88} />
-      </mesh>
-
-      {/* Outer courtyard walls */}
-      <mesh position={[0, 1.2, -5.2]} castShadow receiveShadow>
-        <boxGeometry args={[12, 2.4, 0.4]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[-6, 1.0, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.4, 2, 10]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[6, 1.0, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.4, 2, 10]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-
-      {/* Hollow hall — walls only so the camera can walk inside */}
-      <mesh position={[-3.5, 2.1, -0.4]} castShadow receiveShadow>
-        <boxGeometry args={[0.35, 4.0, 5.6]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[3.5, 2.1, -0.4]} castShadow receiveShadow>
-        <boxGeometry args={[0.35, 4.0, 5.6]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, 2.1, -3.05]} castShadow receiveShadow>
-        <boxGeometry args={[7.2, 4.0, 0.35]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      {/* Roof slab under the dome */}
-      <mesh position={[0, 4.05, -0.4]} castShadow receiveShadow>
-        <boxGeometry args={[7.2, 0.28, 5.6]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      {/* Front facade with open center doorway */}
-      <mesh position={[-2.35, 2.1, 2.25]} castShadow receiveShadow>
-        <boxGeometry args={[2.5, 4.0, 0.35]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[2.35, 2.1, 2.25]} castShadow receiveShadow>
-        <boxGeometry args={[2.5, 4.0, 0.35]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      <mesh position={[0, 3.55, 2.25]} castShadow receiveShadow>
-        <boxGeometry args={[2.2, 1.1, 0.35]} />
-        <meshStandardMaterial {...stone} />
-      </mesh>
-      {/* Floor carpet */}
-      <mesh position={[0, 0.14, -0.4]} receiveShadow>
-        <boxGeometry args={[6.0, 0.06, 4.4]} />
-        <meshStandardMaterial color="#4a2e18" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 0.18, -0.4]} receiveShadow>
-        <boxGeometry args={[5.2, 0.02, 3.6]} />
-        <meshStandardMaterial color="#6b3f22" roughness={0.85} />
-      </mesh>
-
-      {/* Interior columns */}
-      {[-2.1, -0.7, 0.7, 2.1].map((x) =>
-        [-1.4, 0.6].map((z) => (
-          <mesh key={`${x}-${z}`} position={[x, 1.6, z]} castShadow>
-            <cylinderGeometry args={[0.16, 0.18, 2.8, 16]} />
-            <meshStandardMaterial {...stone} />
-          </mesh>
-        )),
-      )}
-
-      {/* Mihrab niche */}
-      <mesh position={[0, 1.8, -2.55]} castShadow>
-        <boxGeometry args={[1.6, 2.6, 0.35]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-      <mesh position={[0, 1.7, -2.35]}>
-        <planeGeometry args={[1.1, 2.0]} />
-        <meshStandardMaterial color="#0d1a14" emissive="#c9a44a" emissiveIntensity={0.35} />
-      </mesh>
-
-      <Dome position={[0, 4.15, -0.4]} radius={2.15} />
-      <Dome position={[-3.3, 3.3, -0.4]} radius={0.85} />
-      <Dome position={[3.3, 3.3, -0.4]} radius={0.85} />
-
-      <Minaret position={[-4.6, 0.1, -2.6]} />
-      <Minaret position={[4.6, 0.1, -2.6]} />
-
-      {/* Facade arches — entry sequence */}
-      <ArchWay position={[0, 0.1, 3.6]} width={2.6} height={3.2} depth={0.7} />
-      <ArchWay position={[-2.4, 0.15, 3.6]} width={1.5} height={2.4} depth={0.55} />
-      <ArchWay position={[2.4, 0.15, 3.6]} width={1.5} height={2.4} depth={0.55} />
-
-      {/* Portico */}
-      {[-3, -1.5, 0, 1.5, 3].map((x) => (
-        <mesh key={x} position={[x, 1.5, 4.3]} castShadow>
-          <cylinderGeometry args={[0.14, 0.16, 2.8, 14]} />
-          <meshStandardMaterial {...stone} />
-        </mesh>
-      ))}
-      <mesh position={[0, 3.0, 4.3]} castShadow>
-        <boxGeometry args={[6.8, 0.22, 0.7]} />
-        <meshStandardMaterial {...gold} />
-      </mesh>
-
-      {/* Warm doorway light the camera walks through */}
-      <mesh ref={doorGlow} position={[0, 1.7, 2.35]}>
-        <planeGeometry args={[1.5, 2.6]} />
-        <meshStandardMaterial
-          color="#1a1208"
-          emissive="#e0b45a"
-          emissiveIntensity={0.25}
-          transparent
-          opacity={0.85}
-          side={DoubleSide}
+    <motion.article
+      style={{ opacity, y, scale }}
+      className={`pointer-events-none absolute ${card.placement}`}
+      aria-hidden
+    >
+      <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl transition-colors duration-500 ease-out md:p-9">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 0%, rgba(255,255,255,0.06), transparent 55%)",
+          }}
         />
-      </mesh>
-
-      {/* Steps */}
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} position={[0, 0.12 + i * 0.1, 5.0 + i * 0.28]} castShadow receiveShadow>
-          <boxGeometry args={[5.5 - i * 0.4, 0.12, 0.45]} />
-          <meshStandardMaterial color="#d7cdb8" roughness={0.82} />
-        </mesh>
-      ))}
-    </group>
+        <div className="relative flex items-start gap-6">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/5 bg-white/[0.04] shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <Icon className="h-4 w-4 text-white/70" strokeWidth={1.5} aria-hidden />
+          </div>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/35">
+              {card.eyebrow}
+            </p>
+            <h3 className="mt-3.5 font-display text-2xl leading-[0.95] tracking-[-0.03em] text-white/90">
+              {card.title}
+            </h3>
+            <p className="mt-3.5 text-sm leading-relaxed tracking-wide text-white/45">
+              {card.body}
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.article>
   );
 }
 
-function Atmosphere() {
-  const group = useRef<Group>(null);
-  const seeds = useMemo(
-    () =>
-      Array.from({ length: 40 }).map((_, i) => ({
-        x: ((i * 47) % 100) / 100 * 16 - 8,
-        y: 0.8 + ((i * 13) % 40) / 10,
-        z: ((i * 29) % 100) / 100 * 14 - 4,
-        s: 0.02 + (i % 4) * 0.01,
-        sp: 0.08 + (i % 5) * 0.03,
-      })),
-    [],
+function AmbientOrb({
+  progress,
+  reduce,
+  className,
+  range,
+  drift,
+}: {
+  progress: MotionValue<number>;
+  reduce: boolean | null;
+  className: string;
+  range: [number, number, number, number];
+  drift: [number, number];
+}) {
+  const [a, b, c, d] = range;
+  const opacity = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [0.35, 0.35, 0.35, 0.35] : [0, 0.55, 0.55, 0],
   );
-
-  useFrame((state) => {
-    const children = group.current?.children ?? [];
-    children.forEach((child, i) => {
-      const s = seeds[i];
-      if (!s) return;
-      const t = state.clock.elapsedTime * s.sp;
-      child.position.set(s.x + Math.sin(t + i) * 0.4, s.y + Math.sin(t * 0.6) * 0.25, s.z);
-    });
-  });
+  const y = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [0, 0, 0, 0] : [drift[0], 0, 0, drift[1]],
+  );
+  const scale = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [1, 1, 1, 1] : [0.85, 1, 1, 1.05],
+  );
 
   return (
-    <group ref={group}>
-      {seeds.map((s, i) => (
-        <mesh key={i} scale={s.s} frustumCulled={false}>
-          <sphereGeometry args={[1, 6, 6]} />
-          <meshBasicMaterial color="#e6d39a" transparent opacity={0.22} depthWrite={false} />
-        </mesh>
-      ))}
-    </group>
+    <motion.div
+      aria-hidden
+      style={{ opacity, y, scale }}
+      className={`pointer-events-none absolute rounded-full border border-white/5 bg-white/[0.03] shadow-2xl shadow-black/30 backdrop-blur-xl ${className}`}
+    />
   );
 }
 
-function CameraPath() {
-  const { camera } = useThree();
-  const look = useRef(new Vector3(0, 1.5, 0));
-  const pos = useRef(new Vector3(9.5, 3.4, 14));
-
-  useFrame((_, delta) => {
-    const shot = samplePath(pageScroll.p);
-    pos.current.x = damp(pos.current.x, shot.pos[0], 3.0, delta);
-    pos.current.y = damp(pos.current.y, shot.pos[1], 3.0, delta);
-    pos.current.z = damp(pos.current.z, shot.pos[2], 3.0, delta);
-    look.current.x = damp(look.current.x, shot.look[0], 3.0, delta);
-    look.current.y = damp(look.current.y, shot.look[1], 3.0, delta);
-    look.current.z = damp(look.current.z, shot.look[2], 3.0, delta);
-    camera.position.copy(pos.current);
-    camera.lookAt(look.current);
-  });
-
-  return null;
-}
-
-function World() {
-  return (
-    <>
-      <ScrollDamp />
-      <CameraPath />
-      <fog attach="fog" args={["#0c0a07", 8, 32]} />
-      <color attach="background" args={["#0c0a07"]} />
-      <ambientLight intensity={0.28} />
-      <hemisphereLight args={["#f2e4c4", "#0f1a14", 0.55]} />
-      <directionalLight
-        castShadow
-        position={[8, 12, 6]}
-        intensity={1.55}
-        color="#fff0d2"
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={40}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-15}
-      />
-      <directionalLight position={[-6, 4, -4]} intensity={0.35} color="#5f9a7c" />
-      <pointLight position={[0, 2.2, 0]} intensity={0.7} color="#ffd27a" distance={10} />
-      <MasjidWorld />
-      <Atmosphere />
-      <ContactShadows position={[0, 0.02, 0.5]} opacity={0.5} scale={24} blur={2.8} far={12} color="#050403" />
-    </>
-  );
-}
-
+/**
+ * Sticky product-reveal stage — pinned center typography with
+ * scroll-scrubbed UI cards fading around it (Awwwards / Apple cadence).
+ */
 export function StoryScene() {
-  const [active, setActive] = useState(true);
-  const [webgl, setWebgl] = useState(true);
+  const containerRef = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
 
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    try {
-      const canvas = document.createElement("canvas");
-      setWebgl(Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")));
-    } catch {
-      setWebgl(false);
-    }
-    if (reduced) setActive(false);
-    const onVis = () => setActive(!reduced && document.visibilityState === "visible");
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
-  }, []);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
 
-  if (!webgl) {
-    return <div className="h-full w-full bg-[#0c0a07]" />;
-  }
+  const titleOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.08, 0.82, 0.95],
+    reduce ? [1, 1, 1, 1] : [0, 1, 1, 0.35],
+  );
+  const titleY = useTransform(
+    scrollYProgress,
+    [0, 0.1, 0.85, 1],
+    reduce ? [0, 0, 0, 0] : [48, 0, 0, -28],
+  );
+  const titleScale = useTransform(
+    scrollYProgress,
+    [0, 0.12, 0.85, 1],
+    reduce ? [1, 1, 1, 1] : [0.9, 1, 1, 0.97],
+  );
+
+  const subOpacity = useTransform(
+    scrollYProgress,
+    [0.06, 0.16, 0.78, 0.9],
+    reduce ? [1, 1, 1, 1] : [0, 1, 1, 0],
+  );
+  const subY = useTransform(
+    scrollYProgress,
+    [0.06, 0.16, 0.78, 0.9],
+    reduce ? [0, 0, 0, 0] : [24, 0, 0, -16],
+  );
+
+  const glowOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.2, 0.7, 1],
+    reduce ? [0.55, 0.55, 0.55, 0.55] : [0.25, 0.7, 0.55, 0.2],
+  );
+  const glowScale = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1],
+    reduce ? [1, 1, 1] : [0.85, 1.08, 0.95],
+  );
+
+  const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <div className="h-full w-full">
-      <Canvas
-        shadows
-        dpr={[1, 1.6]}
-        frameloop={active ? "always" : "demand"}
-        gl={{
-          antialias: true,
-          alpha: false,
-          powerPreference: "high-performance",
-          stencil: false,
-        }}
-        camera={{ position: [9.5, 3.4, 14], fov: 42, near: 0.1, far: 80 }}
-      >
-        <World />
-      </Canvas>
-    </div>
+    <section
+      ref={containerRef}
+      className="relative z-[2] h-[340vh] w-full bg-black"
+      aria-label="Product reveal"
+    >
+      <div className="sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden px-8 md:px-16">
+        {/* Pitch-black base + centered radial glow */}
+        <div className="absolute inset-0 bg-black" />
+        <motion.div
+          aria-hidden
+          style={{ opacity: glowOpacity, scale: glowScale }}
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[min(72vw,42rem)] w-[min(72vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        >
+          <motion.div
+            className="h-full w-full rounded-full"
+            animate={
+              reduce
+                ? undefined
+                : {
+                    opacity: [0.72, 1, 0.72],
+                    scale: [0.94, 1.06, 0.94],
+                  }
+            }
+            transition={{
+              duration: 9,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+            style={{
+              background:
+                "radial-gradient(circle at center, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 32%, transparent 68%)",
+            }}
+          />
+        </motion.div>
+
+        {/* Soft vignette for depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%)",
+          }}
+        />
+
+        {/* Ambient UI orbs */}
+        <AmbientOrb
+          progress={scrollYProgress}
+          reduce={reduce}
+          className="left-[8%] top-[20%] h-24 w-24 md:left-[10%] md:top-[22%] md:h-32 md:w-32"
+          range={[0.05, 0.18, 0.35, 0.48]}
+          drift={[40, -30]}
+        />
+        <AmbientOrb
+          progress={scrollYProgress}
+          reduce={reduce}
+          className="right-[9%] top-[22%] h-16 w-16 md:right-[12%] md:top-[24%] md:h-24 md:w-24"
+          range={[0.28, 0.4, 0.55, 0.68]}
+          drift={[30, -40]}
+        />
+        <AmbientOrb
+          progress={scrollYProgress}
+          reduce={reduce}
+          className="bottom-[16%] left-[14%] h-20 w-20 md:bottom-[18%] md:left-[16%] md:h-28 md:w-28"
+          range={[0.52, 0.64, 0.78, 0.9]}
+          drift={[50, -20]}
+        />
+
+        {/* Floating reveal cards */}
+        {cards.map((card) => (
+          <FloatingCard
+            key={card.id}
+            card={card}
+            progress={scrollYProgress}
+            reduce={reduce}
+          />
+        ))}
+
+        {/* Pinned center typography */}
+        <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-10 py-16 text-center md:px-16 md:py-24">
+          <motion.p
+            style={{ opacity: subOpacity, y: subY }}
+            className="mb-10 flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.48em] text-white/40 md:mb-12 md:tracking-[0.56em]"
+          >
+            <Sparkles className="h-3 w-3 text-white/50" strokeWidth={1.5} aria-hidden />
+            {site.shortName} · Est. {site.established}
+          </motion.p>
+
+          <motion.h2
+            style={{ opacity: titleOpacity, y: titleY, scale: titleScale }}
+            className="bg-gradient-to-b from-white to-white/40 bg-clip-text font-display text-[clamp(3.25rem,11vw,8.5rem)] font-bold leading-[0.86] tracking-[-0.055em] text-transparent"
+          >
+            Faith that
+            <br />
+            feels like home.
+          </motion.h2>
+
+          <motion.p
+            style={{ opacity: subOpacity, y: subY }}
+            className="mt-12 max-w-sm text-sm leading-relaxed tracking-[0.08em] text-white/40 md:mt-14 md:max-w-md md:text-base md:tracking-[0.12em]"
+          >
+            Scroll — and the room fills with light, service, and the Friday table.
+          </motion.p>
+        </div>
+
+        {/* Scroll progress hairline */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-12 left-1/2 h-px w-[min(12rem,40vw)] -translate-x-1/2 overflow-hidden rounded-full bg-white/10 md:bottom-16"
+        >
+          <motion.div
+            style={{ width: progressWidth }}
+            className="h-full bg-gradient-to-r from-white/0 via-white/70 to-white/20"
+          />
+        </div>
+      </div>
+    </section>
   );
 }

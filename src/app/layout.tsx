@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { site } from "@/lib/site";
 
 const display = Cormorant_Garamond({
@@ -33,9 +34,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col text-ink" suppressHydrationWarning>
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <SmoothScrollProvider>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </SmoothScrollProvider>
       </body>
     </html>
   );
