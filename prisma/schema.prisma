@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum AnnouncementKind {
+  GENERAL
+  URGENT
+  PROGRAM
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(MEMBER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Announcement {
+  id        String            @id @default(cuid())
+  title     String
+  body      String
+  kind      AnnouncementKind  @default(GENERAL)
+  published Boolean           @default(true)
+  pinned    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model JumahService {
+  id           String    @id @default(cuid())
+  serviceDate  DateTime
+  khutbahTitle String
+  imam         String
+  language     String    @default("English")
+  startsAt     String    @default("1:30 PM EST")
+  zoomUrl      String?
+  notes        String?
+  published    Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  details     String
+  startsAt    DateTime
+  endsAt      DateTime?
+  location    String
+  category    String
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JournalIssue {
+  id          String   @id @default(cuid())
+  title       String
+  issueLabel  String
+  excerpt     String
+  body        String
+  publishedAt DateTime
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MemberDocument {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String
+  body        String
+  category    String
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  attention String
+  message   String
+  createdAt DateTime @default(now())
+}
