@@ -24,7 +24,6 @@ type GalleryCard = {
   caption: string;
   src: string;
   alt: string;
-  offset: string;
 };
 
 const gallery: GalleryCard[] = [
@@ -34,7 +33,6 @@ const gallery: GalleryCard[] = [
     caption: "Light before the adhan",
     src: "https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80",
     alt: "Interior of a mosque prayer hall with soft natural light",
-    offset: "md:translate-y-6",
   },
   {
     id: "gather",
@@ -42,7 +40,6 @@ const gallery: GalleryCard[] = [
     caption: "Neighbors become family",
     src: "https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=1200&q=80",
     alt: "Community gathering outside a place of worship",
-    offset: "md:-translate-y-4",
   },
   {
     id: "table",
@@ -50,9 +47,10 @@ const gallery: GalleryCard[] = [
     caption: "Halimah's Pantry & meals",
     src: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80",
     alt: "Hands sharing food at a community table",
-    offset: "md:translate-y-10",
   },
 ];
+
+const springConfig = { stiffness: 150, damping: 18, mass: 0.4 };
 
 function TiltGlassCard({
   card,
@@ -62,72 +60,82 @@ function TiltGlassCard({
   reduce: boolean | null;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const rawX = useMotionValue(0);
-  const rawY = useMotionValue(0);
 
-  const springX = useSpring(rawX, { stiffness: 220, damping: 22, mass: 0.55 });
-  const springY = useSpring(rawY, { stiffness: 220, damping: 22, mass: 0.55 });
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
-  const rotateX = useTransform(springY, [-0.5, 0.5], [11, -11]);
-  const rotateY = useTransform(springX, [-0.5, 0.5], [-14, 14]);
+  const springX = useSpring(mouseX, springConfig);
+  const springY = useSpring(mouseY, springConfig);
+
+  // Cursor normalized to [-0.5, 0.5] → rotate capped at ±15°
+  const rotateX = useTransform(springY, [-0.5, 0.5], [15, -15]);
+  const rotateY = useTransform(springX, [-0.5, 0.5], [-15, 15]);
+
   const glareX = useTransform(springX, [-0.5, 0.5], [0, 100]);
   const glareY = useTransform(springY, [-0.5, 0.5], [0, 100]);
-  const glareBackground = useMotionTemplate`radial-gradient(420px circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.22), transparent 55%)`;
+  const glareBackground = useMotionTemplate`radial-gradient(520px circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.28), transparent 52%)`;
 
-  const onMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (reduce || !cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    rawX.set((event.clientX - rect.left) / rect.width - 0.5);
-    rawY.set((event.clientY - rect.top) / rect.height - 0.5);
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(x);
+    mouseY.set(y);
   };
 
-  const onLeave = () => {
-    rawX.set(0);
-    rawY.set(0);
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
   };
 
   return (
     <motion.div
       ref={cardRef}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       style={{
         rotateX: reduce ? 0 : rotateX,
         rotateY: reduce ? 0 : rotateY,
         transformStyle: "preserve-3d",
+        transformPerspective: 1000,
       }}
-      className={`group relative ${card.offset}`}
+      className="relative will-change-transform"
     >
       <div
-        className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/40 backdrop-blur-xl transition-shadow duration-500 ease-out group-hover:shadow-black/55"
+        className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/5 backdrop-blur-xl"
         style={{
+          transformStyle: "preserve-3d",
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35), 0 28px 60px rgba(0,0,0,0.45)",
-          transform: "translateZ(0)",
+            "inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.4), 0 32px 80px rgba(0,0,0,0.55)",
         }}
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem]">
+        <div
+          className="relative aspect-[4/5] overflow-hidden rounded-[1.25rem]"
+          style={{ transform: "translateZ(24px)", transformStyle: "preserve-3d" }}
+        >
           <Image
             src={card.src}
             alt={card.alt}
             fill
             sizes="(max-width: 768px) 85vw, 28vw"
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+            className="object-cover"
+            style={{ transform: "translateZ(0)" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <motion.div
             aria-hidden
             style={{ background: glareBackground }}
-            className="pointer-events-none absolute inset-0 mix-blend-soft-light opacity-80"
+            className="pointer-events-none absolute inset-0 mix-blend-soft-light"
           />
           <div
-            className="absolute inset-x-0 bottom-0 p-5"
-            style={{ transform: "translateZ(28px)" }}
+            className="absolute inset-x-0 bottom-0 p-6"
+            style={{ transform: "translateZ(48px)" }}
           >
-            <p className="text-[10px] font-medium uppercase tracking-[0.38em] text-white/45">
+            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/45">
               {card.caption}
             </p>
-            <h3 className="mt-2 font-display text-2xl tracking-[-0.03em] text-white/95">
+            <h3 className="mt-2 font-display text-2xl tracking-[-0.03em] text-white">
               {card.title}
             </h3>
           </div>
@@ -147,7 +155,7 @@ function SoftStat({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-2xl shadow-black/20 backdrop-blur-xl">
+    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-2xl shadow-black/5 backdrop-blur-xl">
       <div className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-gold text-pine-deep shadow-2xl shadow-black/20">
         {icon}
       </div>
@@ -161,9 +169,6 @@ function SoftStat({
   );
 }
 
-/**
- * Premium home hero — layered parallax calligraphy + mouse-tilt glass cards.
- */
 export function WarmArrivalSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
@@ -173,63 +178,53 @@ export function WarmArrivalSection() {
     offset: ["start end", "end start"],
   });
 
-  // Background moves slowest; foreground text moves farther (faster relative parallax).
+  // Background calligraphy — independent, slower parallax track
   const calligraphyY = useTransform(
     scrollYProgress,
     [0, 1],
-    reduce ? ["0%", "0%"] : ["-8%", "14%"],
+    reduce ? ["0%", "0%"] : ["-18%", "22%"],
   );
-  const calligraphyScale = useTransform(
-    scrollYProgress,
-    [0, 1],
-    reduce ? [1, 1] : [1.05, 1.18],
-  );
+
+  // Foreground text — faster / opposite travel for depth
   const textY = useTransform(
     scrollYProgress,
     [0, 1],
-    reduce ? ["0%", "0%"] : ["12%", "-18%"],
+    reduce ? ["0%", "0%"] : ["14%", "-22%"],
   );
+
   const cardsY = useTransform(
     scrollYProgress,
     [0, 1],
-    reduce ? ["0%", "0%"] : ["8%", "-10%"],
-  );
-  const fadeIn = useTransform(
-    scrollYProgress,
-    [0.05, 0.22, 0.78, 0.95],
-    reduce ? [1, 1, 1, 1] : [0.35, 1, 1, 0.55],
+    reduce ? ["0%", "0%"] : ["10%", "-14%"],
   );
 
   return (
     <section
       id="home"
       ref={sectionRef}
-      className="relative isolate min-h-[140svh] overflow-hidden px-5 py-28 md:px-10 md:py-36"
-      style={{ perspective: "1400px" }}
+      className="relative min-h-[140svh] overflow-hidden bg-black px-5 py-28 md:px-10 md:py-36"
     >
-      {/* Atmosphere base */}
-      <div className="pointer-events-none absolute inset-0 -z-20 bg-[#070604]" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(ellipse at 50% 28%, rgba(201,164,74,0.12), transparent 52%), radial-gradient(ellipse at 80% 80%, rgba(255,255,255,0.04), transparent 40%)",
         }}
       />
 
-      {/* Layer 1 — slow calligraphy watermark */}
+      {/* Parallax calligraphy — absolute, behind content, scroll-tied */}
       <motion.div
         aria-hidden
-        style={{ y: calligraphyY, scale: calligraphyScale }}
-        className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center opacity-10"
+        style={{ y: calligraphyY }}
+        className="pointer-events-none absolute inset-0 z-[-1] flex items-center justify-center opacity-10"
       >
-        <div className="relative h-[min(140vmin,64rem)] w-[min(140vmin,64rem)]">
+        <div className="relative h-[min(150vmin,70rem)] w-[min(150vmin,70rem)]">
           <div
-            className="absolute inset-[18%] rounded-full blur-3xl"
+            className="absolute inset-[16%] rounded-full blur-3xl"
             style={{
               background:
-                "radial-gradient(circle at center, rgba(201,164,74,0.28), transparent 70%)",
+                "radial-gradient(circle at center, rgba(201,164,74,0.3), transparent 70%)",
             }}
           />
           <Image
@@ -237,19 +232,18 @@ export function WarmArrivalSection() {
             alt=""
             fill
             priority
-            sizes="(max-width: 768px) 140vw, 90vw"
+            sizes="(max-width: 768px) 150vw, 100vw"
             className="object-contain"
           />
         </div>
       </motion.div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-16 md:gap-24">
-        {/* Layer 2 — faster foreground copy */}
         <motion.div
-          style={{ y: textY, opacity: fadeIn }}
+          style={{ y: textY }}
           className="relative mx-auto max-w-4xl text-center md:mx-0 md:max-w-3xl md:text-left"
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.48em] text-gold-soft/80 md:tracking-[0.56em]">
+          <p className="text-[10px] font-medium uppercase tracking-[0.48em] text-white/40 md:tracking-[0.56em]">
             Greensboro · Est. {site.established}
           </p>
 
@@ -263,7 +257,7 @@ export function WarmArrivalSection() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
             <a
-              href="#jumah"
+              href="/jumah"
               className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-pine-deep shadow-2xl shadow-black/30 transition-transform duration-500 ease-out hover:scale-[1.02]"
             >
               Friday · {site.jumah.time}
@@ -289,14 +283,11 @@ export function WarmArrivalSection() {
           </div>
         </motion.div>
 
-        {/* Layer 3 — interactive 3D glass image cards */}
-        <motion.div
-          style={{ y: cardsY, opacity: fadeIn }}
-          className="relative"
-        >
+        {/* 3D card stage — perspective REQUIRED on the parent of tilting cards */}
+        <motion.div style={{ y: cardsY }} className="relative">
           <div
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8"
-            style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
+            style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
           >
             {gallery.map((card) => (
               <TiltGlassCard key={card.id} card={card} reduce={reduce} />

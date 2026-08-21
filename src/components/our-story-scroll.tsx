@@ -67,19 +67,17 @@ function useChapterOpacity(
 ) {
   const start = index / total;
   const end = (index + 1) / total;
-  const fade = (end - start) * 0.28;
+  const fade = Math.max((end - start) * 0.22, 0.04);
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
+  // Wide, non-overlapping holds so a chapter is never stuck at 0 while its image is on screen
   return useTransform(
     progress,
-    [
-      Math.max(0, start - fade * 0.15),
-      start + fade,
-      end - fade,
-      Math.min(1, end + fade * 0.15),
-    ],
-    reduce ? [1, 1, 1, 1] : [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0],
+    [start, start + fade, end - fade, end],
+    reduce
+      ? [1, 1, 1, 1]
+      : [isFirst ? 1 : 0, 1, 1, isLast ? 1 : 0],
   );
 }
 
@@ -97,62 +95,28 @@ function ChapterPanel({
   reduce: boolean | null;
 }) {
   const opacity = useChapterOpacity(progress, index, total, reduce);
-  const y = useTransform(opacity, [0, 1], reduce ? [0, 0] : [28, 0]);
+  const y = useTransform(opacity, [0, 1], reduce ? [0, 0] : [24, 0]);
 
   return (
     <motion.article
       style={{ opacity, y }}
-      className="absolute inset-x-0 top-1/2 w-full -translate-y-1/2"
+      className="absolute inset-x-0 top-1/2 z-10 w-full -translate-y-1/2"
     >
-      <p className="text-[10px] font-medium uppercase tracking-[0.48em] text-white/35">
-        {chapter.eyebrow}
-      </p>
-      <h2 className="mt-6 bg-gradient-to-b from-white to-white/40 bg-clip-text font-display text-[clamp(2.5rem,4.5vw,4.75rem)] font-bold leading-[0.92] tracking-[-0.045em] text-transparent">
-        {chapter.title}
-      </h2>
-      <p className="mt-8 max-w-md text-base leading-relaxed tracking-[0.04em] text-white/45 md:text-lg">
-        {chapter.body}
-      </p>
-      <p className="mt-10 text-[10px] uppercase tracking-[0.42em] text-white/25">
-        {String(index + 1).padStart(2, "0")} — {String(total).padStart(2, "0")}
-      </p>
-    </motion.article>
-  );
-}
-
-function StickyNarrative({
-  progress,
-  reduce,
-}: {
-  progress: MotionValue<number>;
-  reduce: boolean | null;
-}) {
-  return (
-    <div className="relative hidden lg:block">
-      <div className="sticky top-0 flex h-screen items-center px-10 xl:px-16">
-        <div className="relative w-full max-w-xl">
-          {chapters.map((chapter, index) => (
-            <ChapterPanel
-              key={chapter.id}
-              chapter={chapter}
-              index={index}
-              total={chapters.length}
-              progress={progress}
-              reduce={reduce}
-            />
-          ))}
-          {/* Keeps sticky column height while absolute panels crossfade */}
-          <div className="invisible pointer-events-none select-none" aria-hidden>
-            <p className="text-[10px] uppercase tracking-[0.48em]">{chapters[0].eyebrow}</p>
-            <h2 className="mt-6 font-display text-[clamp(2.5rem,4.5vw,4.75rem)] font-bold leading-[0.92]">
-              {chapters[0].title}
-            </h2>
-            <p className="mt-8 max-w-md text-base md:text-lg">{chapters[0].body}</p>
-            <p className="mt-10 text-[10px] uppercase tracking-[0.42em]">01 — 04</p>
-          </div>
-        </div>
+      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-8 shadow-2xl shadow-black/5 backdrop-blur-xl md:p-10">
+        <p className="text-[10px] font-medium uppercase tracking-[0.48em] text-white/40">
+          {chapter.eyebrow}
+        </p>
+        <h2 className="mt-6 bg-gradient-to-b from-white to-white/40 bg-clip-text font-display text-[clamp(2.25rem,4vw,4.25rem)] font-bold leading-[0.92] tracking-[-0.045em] text-transparent">
+          {chapter.title}
+        </h2>
+        <p className="mt-7 max-w-md text-base leading-relaxed tracking-[0.04em] text-white/50 md:text-lg">
+          {chapter.body}
+        </p>
+        <p className="mt-9 text-[10px] uppercase tracking-[0.42em] text-white/30">
+          {String(index + 1).padStart(2, "0")} — {String(total).padStart(2, "0")}
+        </p>
       </div>
-    </div>
+    </motion.article>
   );
 }
 
@@ -164,30 +128,36 @@ function VisualFrame({
   priority?: boolean;
 }) {
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03] shadow-2xl shadow-white/5 sm:aspect-[3/4] lg:aspect-[4/5]">
+    <div
+      className="relative z-10 h-[70vh] min-h-[28rem] w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl shadow-white/5"
+      style={{
+        boxShadow:
+          "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35), 0 28px 70px rgba(0,0,0,0.5)",
+      }}
+    >
+      {/* Fallback plate — visible even if the remote image fails */}
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-br from-white/[0.07] via-white/[0.02] to-transparent"
+      />
+
       <Image
         src={chapter.image}
         alt={chapter.alt}
         fill
         priority={priority}
-        sizes="(max-width: 1023px) 92vw, 46vw"
+        sizes="(max-width: 1023px) 92vw, 48vw"
         className="object-cover"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-[1.75rem]"
-        style={{
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35)",
-        }}
-      />
+
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/15" />
     </div>
   );
 }
 
 /**
- * Awwwards-style sticky story — pinned narrative left, scrolling glass images right.
+ * Sticky story — scrolling images LEFT, pinned narrative RIGHT.
+ * Image frames use explicit h-[70vh] so next/image fill cannot collapse.
  */
 export function OurStoryScroll() {
   const containerRef = useRef<HTMLElement>(null);
@@ -212,7 +182,7 @@ export function OurStoryScroll() {
   return (
     <section
       ref={containerRef}
-      className="relative bg-black text-white"
+      className="relative z-0 bg-black text-white"
       aria-label="Our story"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -225,33 +195,63 @@ export function OurStoryScroll() {
         />
       </div>
 
-      {/* Desktop: sticky narrative + scrolling visuals */}
-      <div className="relative mx-auto hidden max-w-7xl lg:grid lg:grid-cols-2 lg:gap-6 xl:gap-10">
-        <StickyNarrative progress={scrollYProgress} reduce={reduce} />
-
-        <div className="relative">
+      {/* Desktop: images left · sticky copy right */}
+      <div className="relative z-10 mx-auto hidden min-h-[400vh] max-w-7xl lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14">
+        {/* LEFT — scrollable visual column (defines scroll height) */}
+        <div className="relative z-10">
           {chapters.map((chapter, index) => (
             <div
               key={chapter.id}
-              className="flex min-h-screen items-center px-8 py-16 xl:px-12"
+              className="flex h-screen min-h-[100svh] items-center px-8 py-12 xl:px-12"
             >
-              <div className="w-full max-w-xl xl:ml-auto">
+              <div className="relative z-10 w-full max-w-xl">
                 <VisualFrame chapter={chapter} priority={index === 0} />
-                <p className="mt-5 text-[10px] uppercase tracking-[0.36em] text-white/30">
+                <p className="mt-5 text-[10px] uppercase tracking-[0.36em] text-white/35">
                   {chapter.eyebrow}
                 </p>
               </div>
             </div>
           ))}
         </div>
+
+        {/* RIGHT — sticky narrative, crossfades with scroll progress */}
+        <div className="relative z-20">
+          <div className="sticky top-0 flex h-screen min-h-[100svh] items-center px-10 xl:px-16">
+            <div className="relative w-full max-w-xl">
+              {chapters.map((chapter, index) => (
+                <ChapterPanel
+                  key={chapter.id}
+                  chapter={chapter}
+                  index={index}
+                  total={chapters.length}
+                  progress={scrollYProgress}
+                  reduce={reduce}
+                />
+              ))}
+              {/* Layout anchor so absolute panels don't collapse the column */}
+              <div className="invisible pointer-events-none select-none" aria-hidden>
+                <div className="rounded-[1.75rem] border border-white/10 p-8 md:p-10">
+                  <p className="text-[10px] uppercase tracking-[0.48em]">
+                    {chapters[0].eyebrow}
+                  </p>
+                  <h2 className="mt-6 font-display text-[clamp(2.25rem,4vw,4.25rem)] font-bold leading-[0.92]">
+                    {chapters[0].title}
+                  </h2>
+                  <p className="mt-7 max-w-md text-base md:text-lg">{chapters[0].body}</p>
+                  <p className="mt-9 text-[10px] uppercase tracking-[0.42em]">01 — 04</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile / tablet: stacked chapters */}
-      <div className="relative mx-auto flex max-w-3xl flex-col gap-20 px-5 py-20 lg:hidden">
+      {/* Mobile / tablet */}
+      <div className="relative z-10 mx-auto flex max-w-3xl flex-col gap-20 px-5 py-20 lg:hidden">
         {chapters.map((chapter, index) => (
           <article key={chapter.id} className="space-y-8">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/35">
+            <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-7 shadow-2xl shadow-black/5 backdrop-blur-xl">
+              <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/40">
                 {chapter.eyebrow}
               </p>
               <h2 className="mt-5 bg-gradient-to-b from-white to-white/40 bg-clip-text font-display text-4xl font-bold leading-[0.94] tracking-[-0.04em] text-transparent sm:text-5xl">
@@ -266,10 +266,9 @@ export function OurStoryScroll() {
         ))}
       </div>
 
-      {/* Scroll progress hairline (desktop) */}
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-8 left-1/2 z-20 hidden h-px w-[min(14rem,40vw)] -translate-x-1/2 overflow-hidden rounded-full bg-white/10 lg:block"
+        className="pointer-events-none fixed bottom-8 left-1/2 z-30 hidden h-px w-[min(14rem,40vw)] -translate-x-1/2 overflow-hidden rounded-full bg-white/10 lg:block"
       >
         <motion.div
           style={{ width: progressWidth }}

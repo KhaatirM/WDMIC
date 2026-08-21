@@ -390,7 +390,7 @@ export function StoryScene() {
             className="h-full bg-gradient-to-r from-white/0 via-white/70 to-white/20"
           />
         </div>
-      </div>
+    </div>
     </section>
   );
 }
