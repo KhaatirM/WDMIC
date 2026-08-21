@@ -28,8 +28,8 @@ export const site = {
 
 export const nav = [
   { id: "home", href: "/#home", label: "Home" },
-  { id: "about", href: "/#about", label: "About" },
-  { id: "jumah", href: "/#jumah", label: "Jumu'ah" },
+  { id: "about", href: "/about", label: "About" },
+  { id: "jumah", href: "/jumah", label: "Jumu'ah" },
   { id: "events", href: "/#events", label: "Events" },
   { id: "announcements", href: "/#announcements", label: "Announcements" },
   { id: "journal", href: "/#journal", label: "Journal" },

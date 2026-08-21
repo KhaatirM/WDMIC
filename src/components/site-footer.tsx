@@ -28,7 +28,7 @@ export function SiteFooter() {
         <div className="text-sm">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-gold-soft">Hub</p>
           <div className="flex flex-col gap-1 text-ivory/80">
-            <Link href="/#jumah">Jumu&apos;ah</Link>
+            <Link href="/jumah">Jumu&apos;ah</Link>
             <Link href="/#events">Events</Link>
             <Link href="/#journal">Muslim Journal</Link>
             <Link href="/members">Members</Link>
