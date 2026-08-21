@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="calligInk" x1="80" y1="80" x2="1120" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6a5a38"/>
+      <stop offset="0.45" stop-color="#d4b56a"/>
+      <stop offset="1" stop-color="#4a3e28"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ornamental rings -->
+  <circle cx="600" cy="360" r="300" stroke="url(#calligInk)" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="600" cy="360" r="268" stroke="url(#calligInk)" stroke-width="0.9" opacity="0.45"/>
+  <circle cx="600" cy="360" r="210" stroke="url(#calligInk)" stroke-width="0.6" opacity="0.3"/>
+
+  <!-- Geometric star / Islamic motif (font-independent, reliable as &lt;img&gt;) -->
+  <g transform="translate(600 360)" stroke="url(#calligInk)" stroke-width="1.4" fill="none" opacity="0.75">
+    <path d="M0,-150 L42,-42 L150,0 L42,42 L0,150 L-42,42 L-150,0 L-42,-42 Z"/>
+    <path d="M0,-98 L28,-28 L98,0 L28,28 L0,98 L-28,28 L-98,0 L-28,-28 Z" opacity="0.7"/>
+    <circle r="18" fill="url(#calligInk)" stroke="none" opacity="0.55"/>
+  </g>
+
+  <!-- Calligraphic stroke ribbons (stylized, no external fonts) -->
+  <g fill="none" stroke="url(#calligInk)" stroke-linecap="round" stroke-linejoin="round" opacity="0.8">
+    <path stroke-width="7" d="M220 300 C320 250, 420 250, 520 300 S720 360, 820 320 S980 250, 1040 280"/>
+    <path stroke-width="4.5" d="M240 360 C360 320, 480 400, 600 360 S840 300, 980 350"/>
+    <path stroke-width="3" d="M280 420 C400 390, 520 450, 640 410 S860 360, 960 400"/>
+    <path stroke-width="2" d="M300 250 C420 220, 540 270, 660 240 S880 200, 980 230"/>
+  </g>
+
+  <!-- Diacritic / dot accents -->
+  <g fill="url(#calligInk)" opacity="0.65">
+    <circle cx="340" cy="270" r="5"/>
+    <circle cx="560" cy="230" r="4"/>
+    <circle cx="780" cy="265" r="5"/>
+    <circle cx="450" cy="445" r="4"/>
+    <circle cx="720" cy="430" r="4.5"/>
+  </g>
+
+  <!-- Corner flourishes -->
+  <path d="M160 160c48 12 72 48 64 96M160 160c12 48 48 72 96 64" stroke="url(#calligInk)" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/>
+  <path d="M1040 160c-48 12-72 48-64 96M1040 160c-12 48-48 72-96 64" stroke="url(#calligInk)" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/>
+  <path d="M160 560c48-12 72-48 64-96M160 560c12-48 48-72 96-64" stroke="url(#calligInk)" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/>
+  <path d="M1040 560c-48-12-72-48-64-96M1040 560c-12-48-48-72-96-64" stroke="url(#calligInk)" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/>
+</svg>

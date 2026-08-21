@@ -35,7 +35,7 @@ const cards: RevealCard[] = [
     title: "Warm before you arrive",
     body: "A house of worship that opens first with light — then with people.",
     icon: MoonStar,
-    range: [0.02, 0.12, 0.22, 0.32],
+    range: [0, 0.08, 0.2, 0.3],
     placement:
       "left-[3%] top-[10%] md:left-[5%] md:top-[14%] w-[min(17rem,72vw)]",
   },
@@ -45,7 +45,7 @@ const cards: RevealCard[] = [
     title: site.jumah.time,
     body: "English khutbah. Visitors welcome every Friday.",
     icon: Users,
-    range: [0.24, 0.34, 0.46, 0.56],
+    range: [0.22, 0.32, 0.44, 0.54],
     placement:
       "right-[3%] top-[8%] md:right-[5%] md:top-[12%] w-[min(16rem,72vw)]",
   },
@@ -77,12 +77,21 @@ function useCardMotion(
   reduce: boolean | null,
 ) {
   const [a, b, c, d] = range;
-  const opacity = useTransform(progress, [a, b, c, d], reduce ? [1, 1, 1, 1] : [0, 1, 1, 0]);
-  const y = useTransform(progress, [a, b, c, d], reduce ? [0, 0, 0, 0] : [56, 0, 0, -48]);
+  const startsVisible = a <= 0;
+  const opacity = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [1, 1, 1, 1] : startsVisible ? [1, 1, 1, 0] : [0, 1, 1, 0],
+  );
+  const y = useTransform(
+    progress,
+    [a, b, c, d],
+    reduce ? [0, 0, 0, 0] : startsVisible ? [0, 0, 0, -48] : [56, 0, 0, -48],
+  );
   const scale = useTransform(
     progress,
     [a, b, c, d],
-    reduce ? [1, 1, 1, 1] : [0.92, 1, 1, 0.96],
+    reduce ? [1, 1, 1, 1] : startsVisible ? [1, 1, 1, 0.96] : [0.92, 1, 1, 0.96],
   );
   return { opacity, y, scale };
 }
@@ -102,7 +111,7 @@ function FloatingCard({
   return (
     <motion.article
       style={{ opacity, y, scale }}
-      className={`pointer-events-none absolute ${card.placement}`}
+      className={`pointer-events-none absolute z-10 ${card.placement}`}
       aria-hidden
     >
       <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl transition-colors duration-500 ease-out md:p-9">
@@ -188,40 +197,51 @@ export function StoryScene() {
 
   const titleOpacity = useTransform(
     scrollYProgress,
-    [0, 0.08, 0.82, 0.95],
-    reduce ? [1, 1, 1, 1] : [0, 1, 1, 0.35],
+    [0, 0.75, 0.9, 1],
+    reduce ? [1, 1, 1, 1] : [1, 1, 0.55, 0.2],
   );
   const titleY = useTransform(
     scrollYProgress,
-    [0, 0.1, 0.85, 1],
-    reduce ? [0, 0, 0, 0] : [48, 0, 0, -28],
+    [0, 0.85, 1],
+    reduce ? [0, 0, 0] : [0, 0, -24],
   );
   const titleScale = useTransform(
     scrollYProgress,
-    [0, 0.12, 0.85, 1],
-    reduce ? [1, 1, 1, 1] : [0.9, 1, 1, 0.97],
+    [0, 0.85, 1],
+    reduce ? [1, 1, 1] : [1, 1, 0.97],
   );
 
   const subOpacity = useTransform(
     scrollYProgress,
-    [0.06, 0.16, 0.78, 0.9],
-    reduce ? [1, 1, 1, 1] : [0, 1, 1, 0],
+    [0, 0.7, 0.88, 1],
+    reduce ? [1, 1, 1, 1] : [1, 1, 0.4, 0],
   );
   const subY = useTransform(
     scrollYProgress,
-    [0.06, 0.16, 0.78, 0.9],
-    reduce ? [0, 0, 0, 0] : [24, 0, 0, -16],
+    [0, 0.7, 0.88, 1],
+    reduce ? [0, 0, 0, 0] : [0, 0, -12, -20],
   );
 
   const glowOpacity = useTransform(
     scrollYProgress,
     [0, 0.2, 0.7, 1],
-    reduce ? [0.55, 0.55, 0.55, 0.55] : [0.25, 0.7, 0.55, 0.2],
+    reduce ? [0.55, 0.55, 0.55, 0.55] : [0.45, 0.7, 0.55, 0.25],
   );
   const glowScale = useTransform(
     scrollYProgress,
     [0, 0.5, 1],
-    reduce ? [1, 1, 1] : [0.85, 1.08, 0.95],
+    reduce ? [1, 1, 1] : [1, 1.06, 0.95],
+  );
+
+  const calligraphyOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.4, 0.85, 1],
+    reduce ? [0.22, 0.22, 0.22, 0.22] : [0.14, 0.2, 0.22, 0.16],
+  );
+  const calligraphyScale = useTransform(
+    scrollYProgress,
+    [0, 1],
+    reduce ? [1, 1] : [0.9, 1.1],
   );
 
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
@@ -238,7 +258,7 @@ export function StoryScene() {
         <motion.div
           aria-hidden
           style={{ opacity: glowOpacity, scale: glowScale }}
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[min(72vw,42rem)] w-[min(72vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[min(72vw,42rem)] w-[min(72vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-full"
         >
           <motion.div
             className="h-full w-full rounded-full"
@@ -262,10 +282,38 @@ export function StoryScene() {
           />
         </motion.div>
 
+        {/* Arabic calligraphy watermark — scroll-scrubbed scale + fade */}
+        <motion.div
+          aria-hidden
+          style={{ opacity: calligraphyOpacity, scale: calligraphyScale }}
+          className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
+        >
+          <div className="relative h-[min(92vmin,52rem)] w-[min(92vmin,52rem)] md:h-[min(96vmin,58rem)] md:w-[min(96vmin,58rem)]">
+            {/* Soft gold bloom behind the calligraphy */}
+            <div
+              className="absolute inset-[14%] rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(circle at center, rgba(201,164,74,0.22) 0%, rgba(42,36,24,0.1) 48%, transparent 72%)",
+              }}
+            />
+            {/*
+              SVG uses a dark gray → gold ink gradient (never pure white).
+              Layer opacity is capped at ~0.15 via useTransform for watermark feel.
+            */}
+            <img
+              src="/arabic-calligraphy.svg"
+              alt=""
+              draggable={false}
+              className="relative h-full w-full select-none object-contain drop-shadow-[0_0_48px_rgba(201,164,74,0.12)]"
+            />
+          </div>
+        </motion.div>
+
         {/* Soft vignette for depth */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background:
               "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%)",
@@ -276,21 +324,21 @@ export function StoryScene() {
         <AmbientOrb
           progress={scrollYProgress}
           reduce={reduce}
-          className="left-[8%] top-[20%] h-24 w-24 md:left-[10%] md:top-[22%] md:h-32 md:w-32"
+          className="left-[8%] top-[20%] z-[1] h-24 w-24 md:left-[10%] md:top-[22%] md:h-32 md:w-32"
           range={[0.05, 0.18, 0.35, 0.48]}
           drift={[40, -30]}
         />
         <AmbientOrb
           progress={scrollYProgress}
           reduce={reduce}
-          className="right-[9%] top-[22%] h-16 w-16 md:right-[12%] md:top-[24%] md:h-24 md:w-24"
+          className="right-[9%] top-[22%] z-[1] h-16 w-16 md:right-[12%] md:top-[24%] md:h-24 md:w-24"
           range={[0.28, 0.4, 0.55, 0.68]}
           drift={[30, -40]}
         />
         <AmbientOrb
           progress={scrollYProgress}
           reduce={reduce}
-          className="bottom-[16%] left-[14%] h-20 w-20 md:bottom-[18%] md:left-[16%] md:h-28 md:w-28"
+          className="bottom-[16%] left-[14%] z-[1] h-20 w-20 md:bottom-[18%] md:left-[16%] md:h-28 md:w-28"
           range={[0.52, 0.64, 0.78, 0.9]}
           drift={[50, -20]}
         />
@@ -335,7 +383,7 @@ export function StoryScene() {
         {/* Scroll progress hairline */}
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-12 left-1/2 h-px w-[min(12rem,40vw)] -translate-x-1/2 overflow-hidden rounded-full bg-white/10 md:bottom-16"
+          className="pointer-events-none absolute bottom-12 left-1/2 z-10 h-px w-[min(12rem,40vw)] -translate-x-1/2 overflow-hidden rounded-full bg-white/10 md:bottom-16"
         >
           <motion.div
             style={{ width: progressWidth }}
