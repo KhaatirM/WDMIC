@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { site } from "@/lib/site";
 
-const display = Cormorant_Garamond({
+const display = localFont({
+  src: [
+    { path: "../fonts/CormorantGaramond-500.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/CormorantGaramond-600.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/CormorantGaramond-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  display: "swap",
 });
 
-const sans = Outfit({
+const sans = localFont({
+  src: [
+    { path: "../fonts/Outfit-400.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/Outfit-500.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/Outfit-600.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/Outfit-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

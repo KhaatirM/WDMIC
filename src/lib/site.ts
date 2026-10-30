@@ -38,14 +38,3 @@ export const nav = [
 ] as const;
 
 export type SectionId = (typeof nav)[number]["id"];
-
-export const darkScenes: SectionId[] = [
-  "home",
-  "about",
-  "jumah",
-  "events",
-  "announcements",
-  "journal",
-  "outreach",
-  "contact",
-];
