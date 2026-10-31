@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { site } from "@/lib/site";
+import { resolveJumahStreamUrl, site } from "@/lib/site";
 import { formatDate } from "@/lib/dates";
 import { JumahBento } from "@/components/jumah-bento";
+import { JumahLivePlayer } from "@/components/jumah-live-player";
 
 export const metadata: Metadata = {
   title: "Jumu'ah",
@@ -34,17 +35,21 @@ export default async function JumahPage() {
             Jumu&apos;ah
           </h1>
           <p className="mt-7 max-w-xl text-sm leading-relaxed tracking-[0.08em] text-white/40 md:text-base md:tracking-[0.1em]">
-            Times, place, and how to arrive — clear, warm, ready.
+            Watch live from anywhere, or plan your visit — times, place, and how to arrive.
           </p>
         </div>
       </header>
+
+      <div className="relative px-5 pb-6 pt-12 md:px-10 md:pt-16">
+        <JumahLivePlayer streamUrl={resolveJumahStreamUrl(next?.zoomUrl)} />
+      </div>
 
       <JumahBento
         time={next?.startsAt ?? site.jumah.time}
         language={next?.language ?? site.jumah.language}
         imam={next?.imam ?? site.jumah.imam}
         khutbahTitle={next?.khutbahTitle}
-        zoomUrl={next?.zoomUrl}
+        streamUrl={resolveJumahStreamUrl(next?.zoomUrl)}
         notes={next?.notes}
         serviceLabel={next ? formatDate(next.serviceDate) : null}
       />

@@ -10,7 +10,7 @@ export default function DonatePage() {
       <h1 className="mt-3 font-display text-5xl">Support the Center</h1>
       <p className="mt-4 text-ink-soft">
         {site.name} is a religious nonprofit eligible to receive tax-deductible
-        contributions (EIN {site.ein}). Gifts keep the masjid, pantry, senior meals, and
+        contributions (EIN {site.ein}). Gifts keep the masjid, pantry, and
         garden work going.
       </p>
       <div className="mt-8 rounded-3xl border border-gold/30 bg-white p-6">
@@ -19,7 +19,7 @@ export default function DonatePage() {
           <li>In person at Friday Jumu&apos;ah or during office hours ({site.hours}).</li>
           <li>
             By mail to {site.address.full}. Please note the program in the memo line
-            (masjid, pantry, seniors, garden).
+            (masjid, pantry, garden).
           </li>
           <li>
             Email {site.emails.business} for campaign receipts, monthly giving, or

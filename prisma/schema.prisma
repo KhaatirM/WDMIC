@@ -46,6 +46,7 @@ model JumahService {
   imam         String
   language     String    @default("English")
   startsAt     String    @default("1:30 PM EST")
+  // Legacy column name; holds the YouTube live-stream URL (kept to avoid a migration).
   zoomUrl      String?
   notes        String?
   published    Boolean   @default(true)

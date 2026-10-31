@@ -21,10 +21,13 @@ export function Reveal({
       node.classList.add("is-in");
       return;
     }
+
+    node.classList.add("is-animating");
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
           node.classList.add("is-in");
+          node.classList.remove("is-animating");
           io.unobserve(node);
         }
       },

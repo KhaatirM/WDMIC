@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { site } from "../src/lib/site";
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,7 @@ async function main() {
     data: [
       {
         title: "Jumu'ah this Friday",
-        body: "Join us in person at 3015 E. Bessemer Ave. at 1:30 PM EST for English khutbah led by Imam Dr. Nuriddin. Visitors are welcome. A Zoom option is listed on the Jumu'ah page for those who cannot attend in person.",
+        body: "Join us in person at 3015 E. Bessemer Ave. at 1:30 PM EST for English khutbah led by Imam Dr. Nuriddin. Visitors are welcome. Jumu'ah is also live streamed on YouTube for those who cannot attend in person — watch right here on the Jumu'ah page (/jumah#live) or open the YouTube channel.",
         kind: "PROGRAM",
         pinned: true,
       },
@@ -44,8 +45,8 @@ async function main() {
         kind: "GENERAL",
       },
       {
-        title: "Senior Nutrition Program continues weekdays",
-        body: "Our federally funded Senior Nutrition program serves healthy meals five days a week for community members aged 60 and up. Call the office to ask about enrollment and transportation.",
+        title: "Halimah's Pantry distribution hours",
+        body: `Halimah's Pantry is open ${site.programs.pantry.days}, ${site.programs.pantry.time}. Neighbors are welcome — call the office with any questions.`,
         kind: "PROGRAM",
       },
     ],
@@ -61,9 +62,10 @@ async function main() {
         imam: "Imam Dr. Abdel J. Nuriddin, N.D., Ph.D.",
         language: "English",
         startsAt: "1:30 PM EST",
-        zoomUrl: "https://zoom.us/j/8912812204",
+        // Column is named zoomUrl for historical reasons; it now holds the YouTube stream URL.
+        zoomUrl: site.jumah.streamUrl,
         notes:
-          "In-person Jumu'ah is held at the Center. Arrive a few minutes early for seating. Meeting ID for the Zoom option is listed on the Jumu'ah page and can be updated by administrators.",
+          "In-person Jumu'ah is held at the Center. Arrive a few minutes early for seating. If you cannot attend, watch the live stream on this site (Jumu'ah page) or on YouTube.",
       },
       {
         serviceDate: addDays(comingFriday, 7),
@@ -116,7 +118,7 @@ async function main() {
         title: "Service as Worship in East Greensboro",
         issueLabel: "Vol. 1, No. 1",
         excerpt:
-          "How Halimah's Pantry, senior meals, and Friday congregation form one community ethic.",
+          "How Halimah's Pantry, the garden, and Friday congregation form one community ethic.",
         body: "The W.D. Mohammed Islamic Center opened its doors in 2018 with a pledge to unite communities and support those in need. This first journal note is a placeholder the board can replace with Muslim Journal clippings, original essays, or khutbah summaries. The database is ready: administrators can publish new issues from the hub without touching code.",
         publishedAt: new Date(),
       },
@@ -144,13 +146,13 @@ async function main() {
         title: "Volunteer roster snapshot",
         summary: "Current pantry, garden, and Jumu'ah hospitality needs.",
         category: "Volunteers",
-        body: "Halimah's Pantry, Senior Nutrition, and Friday hospitality all need consistent volunteers. Coordinators can update this document weekly. Personal phone numbers should stay in a private spreadsheet, not on this page.",
+        body: "Halimah's Pantry, the garden, and Friday hospitality all need consistent volunteers. Coordinators can update this document weekly. Personal phone numbers should stay in a private spreadsheet, not on this page.",
       },
       {
         title: "Board meeting packet (sample)",
         summary: "Agenda outline for the next board session.",
         category: "Board",
-        body: "Sample agenda: (1) opening du'a, (2) minutes, (3) treasurer report, (4) pantry and senior nutrition, (5) facilities, (6) membership, (7) closing. Replace this text before sharing real minutes.",
+        body: "Sample agenda: (1) opening du'a, (2) minutes, (3) treasurer report, (4) pantry and garden, (5) facilities, (6) membership, (7) closing. Replace this text before sharing real minutes.",
       },
     ],
   });

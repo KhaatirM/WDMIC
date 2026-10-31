@@ -61,6 +61,124 @@ body[data-on-dark="true"] .header-ghost {
   border-color: rgba(244, 239, 228, 0.28);
 }
 
+/* ——— Executive Dark Glass form system ——— */
+.form-glass {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.form-glass-input {
+  display: block;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.65rem 0.85rem;
+  color: #fff;
+  transition:
+    border-color 300ms ease,
+    background-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.form-glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.form-glass-input:focus {
+  outline: none;
+  border-color: rgba(201, 164, 74, 0.7);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 2px rgba(201, 164, 74, 0.2);
+}
+
+.form-glass-input option {
+  background: #0a1210;
+  color: #fff;
+}
+
+/*
+ * Visual Stage glass surfaces. These sit over photography and dark pine
+ * backgrounds, so they carry their own dark tint + light text to guarantee
+ * contrast regardless of the imagery behind them. Declared in the components
+ * layer so utility classes (rounded-*, p-*, hover:border-*) still win.
+ */
+@layer components {
+  .glass {
+    border: 1px solid rgba(244, 239, 228, 0.22);
+    background: rgba(7, 25, 18, 0.66);
+    color: var(--ivory);
+    backdrop-filter: blur(16px) saturate(1.25);
+    -webkit-backdrop-filter: blur(16px) saturate(1.25);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 12px 32px rgba(3, 12, 8, 0.35);
+  }
+
+  .glass-strong {
+    border: 1px solid rgba(244, 239, 228, 0.2);
+    background: linear-gradient(145deg, rgba(20, 56, 43, 0.82), rgba(7, 25, 18, 0.88));
+    color: var(--ivory);
+    backdrop-filter: blur(22px) saturate(1.25);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 24px 60px rgba(3, 12, 8, 0.4);
+  }
+}
+
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #c9a44a;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #081c15;
+  transition: filter 280ms ease, transform 280ms ease;
+}
+
+.btn-gold:hover {
+  filter: brightness(1.1);
+}
+
+.contact-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  transition:
+    border-color 280ms ease,
+    background-color 280ms ease,
+    color 280ms ease;
+}
+
+.contact-pill:hover {
+  border-color: rgba(201, 164, 74, 0.45);
+  background: rgba(255, 255, 255, 0.07);
+  color: #e6d39a;
+}
+
+.stage-frame {
+  background:
+    linear-gradient(145deg, rgba(201, 164, 74, 0.22), transparent 42%),
+    linear-gradient(210deg, rgba(22, 68, 52, 0.55), #0a1210 70%);
+}
+
 .invite-section {
   position: relative;
   scroll-margin-top: 5.5rem;
@@ -96,7 +214,6 @@ body[data-on-dark="true"] .header-ghost {
   transition:
     opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
 }
 
 .reveal-left {
@@ -122,14 +239,11 @@ body[data-on-dark="true"] .header-ghost {
 .reveal.is-in {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
+  will-change: auto;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
+.reveal.is-animating {
+  will-change: opacity, transform;
 }
 
 .panel {
@@ -170,11 +284,26 @@ h3,
     scroll-behavior: auto;
   }
 
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+
   .lift {
     transition: none !important;
   }
 
   .lift:hover {
     transform: none;
+  }
+
+  .btn-gold {
+    transition: none;
+  }
+
+  .form-glass-input {
+    transition: none;
   }
 }

@@ -79,7 +79,7 @@ export default async function AdminPage({
             <input name="khutbahTitle" required placeholder="Khutbah title" className="w-full rounded-xl px-3 py-2" />
             <input name="imam" defaultValue={site.jumah.imam} className="w-full rounded-xl px-3 py-2" />
             <input name="startsAt" defaultValue="1:30 PM EST" className="w-full rounded-xl px-3 py-2" />
-            <input name="zoomUrl" placeholder="Zoom URL (optional)" className="w-full rounded-xl px-3 py-2" />
+            <input name="zoomUrl" placeholder="Stream URL (YouTube, optional — defaults to the site YouTube link)" className="w-full rounded-xl px-3 py-2" />
             <textarea name="notes" rows={3} placeholder="Notes" className="w-full rounded-xl px-3 py-2" />
             <button className="rounded-full bg-gold px-4 py-2 text-pine-deep">Add service</button>
           </form>
